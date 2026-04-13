@@ -1,0 +1,468 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Peran Pengguna: customer, kasir, admin
+enum UserRole {
+  customer
+  kasir
+  admin
+}
+
+enum UserStatus {
+  aktif
+  nonaktif
+}
+
+enum FilmAgeRating {
+  SU
+  R13
+  D17
+  D21
+}
+
+enum FilmStatus {
+  tayang
+  segera
+  selesai
+}
+
+enum StudioType {
+  reguler
+  imax
+  fourDX
+  dolby
+}
+
+enum StudioStatus {
+  aktif
+  maintenance
+}
+
+enum SeatType {
+  reguler
+  vip
+  couple
+}
+
+enum SeatStatus {
+  aktif
+  nonaktif
+}
+
+enum ScheduleStatus {
+  aktif
+  selesai
+  dibatalkan
+}
+
+enum ReservationStatus {
+  dipesan
+  terkonfirmasi
+  dibatalkan
+  expired
+}
+
+enum TransactionStatus {
+  pending
+  success
+  failed
+  expired
+  refunded
+}
+
+enum SnackCategory {
+  makanan
+  minuman
+  combo
+}
+
+enum SnackStatus {
+  tersedia
+  habis
+}
+
+enum VoucherType {
+  persen
+  nominal
+}
+
+enum PromoType {
+  beli2gratis1
+  diskon_hari
+  diskon_member
+}
+
+enum PointHistoryType {
+  tambah
+  kurang
+}
+
+enum NotificationType {
+  info
+  sukses
+  peringatan
+  promo
+}
+
+model User {
+  id                 String     @id @default(uuid())
+  userName           String
+  userEmail          String     @unique
+  userPassword       String
+  userPhone          String?
+  userRole           UserRole   @default(customer)
+  userPhoto          String?
+  userStatus         UserStatus @default(aktif)
+  userEmailVerified  Boolean    @default(false)
+  userCreatedAt      DateTime   @default(now())
+  userUpdatedAt      DateTime   @updatedAt
+
+  userDetail         UserDetail?
+  passwordResets     PasswordReset[]
+  sessions           Session[]
+  transactions       Transaction[]
+  ticketsScanned     Ticket[]        @relation("ScannedBy")
+  voucherUsages      VoucherUsage[]
+  pointHistories     PointHistory[]
+  reviews            Review[]
+  waitlists          Waitlist[]
+  notifications      Notification[]
+  auditLogs          AuditLog[]
+  settingsUpdated    SystemSetting[]
+}
+
+model UserDetail {
+  id                   String   @id @default(uuid())
+  userId               String   @unique
+  userDetailBirthDate  DateTime?
+  userDetailAddress    String?
+  userDetailCity       String?
+  userDetailGender     String?
+  userDetailPoints     Int      @default(0)
+  userDetailMemberTier String   @default("bronze") // bronze, silver, gold
+  userDetailUpdatedAt  DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PasswordReset {
+  id             String   @id @default(uuid())
+  userId         String
+  resetToken     String   @unique
+  resetExpiredAt DateTime
+  resetUsed      Boolean  @default(false)
+  resetCreatedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Session {
+  id               String   @id @default(uuid())
+  userId           String
+  sessionToken     String   @unique
+  sessionIpAddress String?
+  sessionUserAgent String?
+  sessionExpiredAt DateTime
+  sessionCreatedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Film {
+  id              String        @id @default(uuid())
+  filmTitle       String
+  filmGenre       String
+  filmDuration    Int
+  filmAgeRating   FilmAgeRating @default(SU)
+  filmScore       Float?
+  filmPoster      String?
+  filmTrailerUrl  String?
+  filmSynopsis    String?       @db.Text
+  filmLanguage    String?
+  filmSubtitle    String?
+  filmDirector    String?
+  filmCast        String?       @db.Text
+  filmStatus      FilmStatus    @default(segera)
+  filmCreatedAt   DateTime      @default(now())
+  filmUpdatedAt   DateTime      @updatedAt
+
+  schedules       Schedule[]
+  reviews         Review[]
+}
+
+model Studio {
+  id                  String       @id @default(uuid())
+  studioName          String
+  studioType          StudioType   @default(reguler)
+  studioCapacity      Int
+  studioTotalRows     Int
+  studioTotalColumns  Int
+  studioStatus        StudioStatus @default(aktif)
+  studioCreatedAt     DateTime     @default(now())
+
+  seats               Seat[]
+  schedules           Schedule[]
+}
+
+model Seat {
+  id           String     @id @default(uuid())
+  studioId     String
+  seatCode     String
+  seatRow      Int
+  seatColumn   Int
+  seatType     SeatType   @default(reguler)
+  seatStatus   SeatStatus @default(aktif)
+  seatCreatedAt DateTime   @default(now())
+
+  studio       Studio     @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  reservations SeatReservation[]
+  tickets      Ticket[]
+}
+
+model Schedule {
+  id                  String         @id @default(uuid())
+  filmId              String
+  studioId            String
+  scheduleDate        DateTime
+  scheduleTimeStart   DateTime
+  scheduleTimeEnd     DateTime
+  schedulePriceRegular Int
+  schedulePriceVip     Int
+  schedulePriceCouple  Int
+  scheduleStatus      ScheduleStatus @default(aktif)
+  scheduleCreatedAt   DateTime       @default(now())
+  scheduleUpdatedAt   DateTime       @updatedAt
+
+  film                Film           @relation(fields: [filmId], references: [id])
+  studio              Studio         @relation(fields: [studioId], references: [id])
+  reservations        SeatReservation[]
+  transactions        Transaction[]
+  tickets             Ticket[]
+  waitlists           Waitlist[]
+}
+
+model SeatReservation {
+  id                   String            @id @default(uuid())
+  scheduleId           String
+  seatId               String
+  transactionId        String?
+  reservationStatus    ReservationStatus @default(dipesan)
+  reservationLockedAt  DateTime          @default(now())
+  reservationExpiredAt DateTime?
+  reservationCreatedAt DateTime          @default(now())
+
+  schedule            Schedule     @relation(fields: [scheduleId], references: [id])
+  seat                Seat         @relation(fields: [seatId], references: [id])
+  transaction         Transaction? @relation(fields: [transactionId], references: [id])
+}
+
+model Transaction {
+  id                             String            @id @default(uuid())
+  transactionCode                String            @unique
+  userId                         String
+  scheduleId                     String
+  transactionSubtotal            Int
+  transactionAdminFee            Int
+  transactionSnackTotal          Int               @default(0)
+  transactionGrandTotal          Int
+  transactionDiscountAmount      Int               @default(0)
+  transactionVoucherId           String?
+  transactionPointsUsed          Int               @default(0)
+  transactionPaymentMethod       String?
+  transactionStatus              TransactionStatus @default(pending)
+  transactionMidtransOrderId     String?           @unique
+  transactionMidtransTransactionId String?
+  transactionMidtransPaymentType String?
+  transactionMidtransVaNumber    String?
+  transactionSnapToken           String?
+  transactionPaidAt             DateTime?
+  transactionExpiredAt          DateTime?
+  transactionCreatedAt          DateTime          @default(now())
+  transactionUpdatedAt          DateTime          @updatedAt
+
+  user                          User              @relation(fields: [userId], references: [id])
+  schedule                      Schedule          @relation(fields: [scheduleId], references: [id])
+  voucher                       Voucher?          @relation(fields: [transactionVoucherId], references: [id])
+  tickets                       Ticket[]
+  snackOrders                   SnackOrder[]
+  seatReservations              SeatReservation[]
+  voucherUsages                 VoucherUsage[]
+  pointHistories                PointHistory[]
+  reviews                       Review[]
+}
+
+model Ticket {
+  id                   String    @id @default(uuid())
+  transactionId        String
+  seatId               String
+  scheduleId           String
+  ticketBarcodeCode    String    @unique
+  ticketQrCode         String    @unique
+  ticketScanStatus     String    @default("belum") // belum, sudah, batal
+  ticketScannedAt      DateTime?
+  ticketScannedByStaffId String?
+  ticketPdfUrl         String?
+  ticketCreatedAt      DateTime  @default(now())
+
+  transaction          Transaction @relation(fields: [transactionId], references: [id])
+  seat                 Seat        @relation(fields: [seatId], references: [id])
+  schedule             Schedule    @relation(fields: [scheduleId], references: [id])
+  staff                User?       @relation("ScannedBy", fields: [ticketScannedByStaffId], references: [id])
+}
+
+model SnackMenu {
+  id               String        @id @default(uuid())
+  snackName        String
+  snackDescription String?
+  snackPrice       Int
+  snackImage       String?
+  snackCategory    SnackCategory @default(makanan)
+  snackStock       Int           @default(0)
+  snackStatus      SnackStatus   @default(tersedia)
+  snackCreatedAt   DateTime      @default(now())
+  snackUpdatedAt   DateTime      @updatedAt
+
+  snackOrders      SnackOrder[]
+}
+
+model SnackOrder {
+  id                     String      @id @default(uuid())
+  transactionId          String
+  snackId                String
+  snackOrderQuantity     Int
+  snackOrderUnitPrice    Int
+  snackOrderSubtotal     Int
+  snackOrderCreatedAt    DateTime    @default(now())
+
+  transaction            Transaction @relation(fields: [transactionId], references: [id])
+  snack                  SnackMenu   @relation(fields: [snackId], references: [id])
+}
+
+model Voucher {
+  id                 String      @id @default(uuid())
+  voucherCode        String      @unique
+  voucherName        String
+  voucherType        VoucherType @default(persen)
+  voucherValue       Int
+  voucherMinPurchase Int         @default(0)
+  voucherMaxDiscount Int?
+  voucherQuota       Int
+  voucherUsedCount   Int         @default(0)
+  voucherStartDate   DateTime
+  voucherEndDate     DateTime
+  voucherStatus      UserStatus  @default(aktif)
+  voucherCreatedAt   DateTime    @default(now())
+
+  transactions       Transaction[]
+  voucherUsages      VoucherUsage[]
+}
+
+model VoucherUsage {
+  id                    String   @id @default(uuid())
+  voucherId             String
+  userId                String
+  transactionId         String
+  voucherUsageCreatedAt DateTime @default(now())
+
+  voucher               Voucher     @relation(fields: [voucherId], references: [id])
+  user                  User        @relation(fields: [userId], references: [id])
+  transaction           Transaction @relation(fields: [transactionId], references: [id])
+}
+
+model Promo {
+  id                  String    @id @default(uuid())
+  promoName           String
+  promoDescription    String?
+  promoType           PromoType @default(diskon_hari)
+  promoDiscountValue  Int
+  promoStartDate      DateTime
+  promoEndDate        DateTime
+  promoStatus         UserStatus @default(aktif)
+  promoCreatedAt      DateTime  @default(now())
+}
+
+model PointHistory {
+  id                       String           @id @default(uuid())
+  userId                   String
+  transactionId           String?
+  pointHistoryAmount      Int
+  pointHistoryType        PointHistoryType @default(tambah)
+  pointHistoryDescription String?
+  pointHistoryCreatedAt   DateTime         @default(now())
+
+  user                    User         @relation(fields: [userId], references: [id])
+  transaction             Transaction? @relation(fields: [transactionId], references: [id])
+}
+
+model Review {
+  id               String      @id @default(uuid())
+  userId           String
+  filmId           String
+  transactionId    String
+  reviewScore      Int
+  reviewComment    String?     @db.Text
+  reviewStatus     String      @default("tampil") // tampil, disembunyikan
+  reviewCreatedAt  DateTime    @default(now())
+  reviewUpdatedAt  DateTime    @updatedAt
+
+  user             User        @relation(fields: [userId], references: [id])
+  film             Film        @relation(fields: [filmId], references: [id])
+  transaction      Transaction @relation(fields: [transactionId], references: [id])
+}
+
+model Waitlist {
+  id                String   @id @default(uuid())
+  userId            String
+  scheduleId        String
+  waitlistSeatType  String   @default("reguler")
+  waitlistStatus    String   @default("menunggu") // menunggu, notified, expired
+  waitlistNotifiedAt DateTime?
+  waitlistCreatedAt DateTime @default(now())
+
+  user              User     @relation(fields: [userId], references: [id])
+  schedule          Schedule @relation(fields: [scheduleId], references: [id])
+}
+
+model Notification {
+  id                    String           @id @default(uuid())
+  userId                String
+  notificationTitle     String
+  notificationMessage   String           @db.Text
+  notificationType      NotificationType @default(info)
+  notificationIsRead    Boolean          @default(false)
+  notificationChannel   String?          @default("app") // app, email, whatsapp
+  notificationCreatedAt DateTime         @default(now())
+
+  user                  User             @relation(fields: [userId], references: [id])
+}
+
+model AuditLog {
+  id                  String   @id @default(uuid())
+  userId              String?
+  auditLogAction      String
+  auditLogModule      String
+  auditLogDescription String?  @db.Text
+  auditLogOldData     Json?
+  auditLogNewData     Json?
+  auditLogIpAddress   String?
+  auditLogCreatedAt   DateTime @default(now())
+
+  user                User?    @relation(fields: [userId], references: [id])
+}
+
+model SystemSetting {
+  id                    String   @id @default(uuid())
+  settingKey            String   @unique
+  settingValue          String   @db.Text
+  settingDescription    String?  @db.Text
+  settingUpdatedByUserId String?
+  settingUpdatedAt      DateTime @updatedAt
+
+  updatedBy             User?    @relation(fields: [settingUpdatedByUserId], references: [id])
+}
