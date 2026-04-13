@@ -82,7 +82,7 @@ const StudioListTable = ({ studioData }: { studioData: any[] }) => {
       {
         id: 'action',
         header: 'Aksi',
-        cell: ({ row }) => (
+        cell: () => (
           <div className='flex items-center'>
             <IconButton onClick={() => alert('Fitur konfigurasi kursi visual segera hadir!')}>
               <i className='tabler-settings text-textSecondary' />

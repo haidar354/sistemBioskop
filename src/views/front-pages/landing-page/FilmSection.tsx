@@ -26,7 +26,7 @@ const StyledCard = styled(Card)(({ theme }) => ({
   }
 }))
 
-const BuyButton = styled(Button)(({ theme }) => ({
+const BuyButton = styled(Button)(() => ({
   position: 'absolute',
   bottom: 20,
   left: '10%',

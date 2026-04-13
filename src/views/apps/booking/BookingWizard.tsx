@@ -206,7 +206,7 @@ const BookingWizard = ({ bookingData }: { bookingData: any }) => {
             color='secondary'
             disabled={activeStep === 0}
             onClick={handleBack}
-            startIcon={<DirectionalIcon ltrIconClass='tabler-arrow-left' />}
+            startIcon={<DirectionalIcon ltrIconClass='tabler-arrow-left' rtlIconClass='tabler-arrow-right' />}
           >
             Kembali
           </Button>
@@ -214,13 +214,14 @@ const BookingWizard = ({ bookingData }: { bookingData: any }) => {
             variant='contained'
             disabled={loading}
             onClick={activeStep === steps.length - 1 ? handleFinalize : handleNext}
-            endIcon={loading ? <CircularProgress size={20} color='inherit' /> : (activeStep === steps.length - 1 ? <i className='tabler-check' /> : <DirectionalIcon ltrIconClass='tabler-arrow-left' />)}
+            endIcon={loading ? <CircularProgress size={20} color='inherit' /> : (activeStep === steps.length - 1 ? <i className='tabler-check' /> : <DirectionalIcon ltrIconClass='tabler-arrow-right' rtlIconClass='tabler-arrow-left' />)}
           >
             {activeStep === steps.length - 1 ? (loading ? 'Memproses...' : 'Konfirmasi & Bayar') : 'Lanjut'}
           </Button>
         </div>
       </CardContent>
     </Card>
+    </>
   )
 }
 

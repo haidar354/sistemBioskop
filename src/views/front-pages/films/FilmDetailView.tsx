@@ -1,7 +1,7 @@
 'use client'
 
 // React Imports
-import { useState } from 'react'
+import React from 'react'
 
 // Next Imports
 import Link from 'next/link'
@@ -13,7 +13,6 @@ import CardContent from '@mui/material/CardContent'
 import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
-import Divider from '@mui/material/Divider'
 import Alert from '@mui/material/Alert'
 import { styled } from '@mui/material/styles'
 
@@ -21,10 +20,6 @@ import { styled } from '@mui/material/styles'
 import classnames from 'classnames'
 import ReactPlayer from 'react-player'
 import { format } from 'date-fns'
-import { id } from 'date-fns/locale'
-
-// Type Imports
-import type { SystemMode } from '@core/types'
 
 // Styles Imports
 import frontCommonStyles from '@views/front-pages/styles.module.css'
@@ -51,7 +46,7 @@ const HeroWrapper = styled('div')(({ theme }) => ({
   }
 }))
 
-const FilmDetailView = ({ film, mode }: { film: any, mode: SystemMode }) => {
+const FilmDetailView = ({ film }: { film: any }) => {
   return (
     <div className='flex flex-col'>
       {/* Hero Section */}

@@ -13,7 +13,6 @@ import { styled } from '@mui/material/styles'
 // Third-party Imports
 import classnames from 'classnames'
 import { format } from 'date-fns'
-import { id } from 'date-fns/locale'
 
 // Styles Imports
 import frontCommonStyles from '@views/front-pages/styles.module.css'
